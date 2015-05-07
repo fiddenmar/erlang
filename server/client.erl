@@ -3,11 +3,12 @@
 
 start(N) ->
     {ok, Socket} = gen_udp:open(0, [binary]),
-    io:format("client opened socket=~p~n",[Socket]),
-    ok = gen_udp:send(Socket, "localhost", 8889, N),
+    BinStr = list_to_binary(N),
+    ok = gen_udp:send(Socket, "localhost", 8889, BinStr),
     Value = receive
                 {udp, Socket, _, _, Bin} ->
-                    io:format("client received:~p~n",[Bin])
+                    Bin
             end,
     gen_udp:close(Socket),
-    Value.
+    Str = binary_to_list(Value),
+    Str.

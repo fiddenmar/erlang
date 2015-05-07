@@ -17,4 +17,3 @@ read(N) ->
 		{error, no_float} -> list_to_integer(N);
 		{F, _} -> F
 	end.
-
