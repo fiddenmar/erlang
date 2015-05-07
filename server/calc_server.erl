@@ -8,15 +8,18 @@ init() ->
 	loop(Socket).
 
 loop(Socket) ->
+	Pid = self(),
+	loop(Socket, Pid).
+
+loop(Socket, Pid) ->
 	receive
 		{udp, Socket, Host, Port, Bin} ->
-			Pid = self(),
 			spawn(fun() -> calc(Pid, {Socket, Host, Port}, Bin) end);
 		{calc, {Socket, Host, Port}, Bin} ->
 			spawn(fun() -> ok = gen_udp:send(Socket, Host, Port, Bin) end)
 			
 	end,
-	loop(Socket).
+	loop(Socket, Pid).
 
 calc(Pid, Data, Bin) ->
 	Str = binary_to_list(Bin),
