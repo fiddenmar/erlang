@@ -1,4 +1,4 @@
-%%calc_server module
+%%calc_client module
 %%
 %%The MIT License (MIT)
 %%
@@ -22,43 +22,17 @@
 %%OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 %%SOFTWARE.
 
--module(calc_server).
--export([start/0]).
+-module(calc_client).
+-export([start/1]).
 
-start() -> spawn_link(fun init/0).
-
-init() ->
-	{ok, Socket} = gen_udp:open(8889, [binary, {active, true}]), 
-	loop(Socket).
-
-loop(Socket) ->
-	Pid = self(),
-	loop(Socket, Pid).
-
-loop(Socket, Pid) ->
-	receive
-		{udp, Socket, Host, Port, Bin} ->
-			spawn(fun() -> calc(Pid, {Socket, Host, Port}, Bin) end);
-		{calc, {Socket, Host, Port}, Bin} ->
-			spawn(fun() -> ok = gen_udp:send(Socket, Host, Port, Bin) end)
-			
-	end,
-	loop(Socket, Pid).
-
-calc(Pid, Data, Bin) ->
-	Str = binary_to_list(Bin),
-	Res = rpn:calc(Str),
-	BinRes = convert(Res),
-	Pid ! {calc, Data, BinRes}.
-
-convert(N) ->
-	List = convert0(N),
-	Bin = list_to_binary(List),
-	Bin.
-
-convert0(N) when is_float(N) ->
-	List = float_to_list(N),
-	List;
-convert0(N) when is_integer(N) ->
-	List = integer_to_list(N),
-	List.
+start(N) ->
+    {ok, Socket} = gen_udp:open(0, [binary]),
+    BinStr = list_to_binary(N),
+    ok = gen_udp:send(Socket, "localhost", 8889, BinStr),
+    Value = receive
+                {udp, Socket, _, _, Bin} ->
+                    Bin
+            end,
+    gen_udp:close(Socket),
+    Str = binary_to_list(Value),
+    Str.
