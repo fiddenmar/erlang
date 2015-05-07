@@ -47,7 +47,7 @@ loop(Socket, Pid) ->
 
 calc(Pid, Data, Bin) ->
 	Str = binary_to_list(Bin),
-	Res = rpn:calc(Str),
+	Res = calc_rpn:calc(Str),
 	BinRes = convert(Res),
 	Pid ! {calc, Data, BinRes}.
 
