@@ -34,6 +34,12 @@ calc("*", [N1, N2|S]) -> [N2*N1|S];
 calc("-", [N1, N2|S]) -> [N2-N1|S];
 calc("/", [N1, N2|S]) -> [N2/N1|S];
 calc("^", [N1, N2|S]) -> [math:pow(N2,N1)|S];
+calc("ln", [N|S]) -> [math:log(N)|S];
+calc("log10", [N|S]) -> [math:log10(N)|S];
+calc("sum", S) -> [lists:sum(S)];
+calc("prod", S) -> [lists:foldl(fun erlang:'*'/2, 1, S)];
+calc("sin", [N|S]) -> [math:sin(N)|S];
+calc("cos", [N|S]) -> [math:cos(N)|S];
 calc(X, Stack) -> [read(X)|Stack].
 
 read(N) -> 
