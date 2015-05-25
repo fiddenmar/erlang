@@ -32,6 +32,8 @@ start(N) ->
     Value = receive
                 {udp, Socket, _, _, Bin} ->
                     Bin
+            after 3000 ->
+                0
             end,
     gen_udp:close(Socket),
     Str = binary_to_list(Value),

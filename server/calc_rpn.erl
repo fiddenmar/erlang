@@ -25,25 +25,51 @@
 -module(calc_rpn).
 -export([calc/1]).
 
+fold(_, Start, []) -> Start;
+fold(F, {ignore, Start}, [H|T]) -> fold(F, F(H,Start,ignore), T);
+fold(F, Start, [H|T]) -> fold(F, F(H,Start,T), T).
+
+take_first([H|_]) -> H.
+
+replace(Changes, Str) -> 
+	lists:map(fun(Key) -> case lists:keyfind(Key, 1, Changes) of {Key, Result} -> Result; false -> Key end end, Str).
+
 calc(L) when is_list(L) ->
-	[Res] = lists:foldl(fun calc/2, [], string:tokens(L, " ")),
+	[Res] = fold(fun calc/3, [], string:tokens(L, " ")),
 	Res.
 
-calc("+", [N1, N2|S]) -> [N2+N1|S];
-calc("*", [N1, N2|S]) -> [N2*N1|S];
-calc("-", [N1, N2|S]) -> [N2-N1|S];
-calc("/", [N1, N2|S]) -> [N2/N1|S];
-calc("^", [N1, N2|S]) -> [math:pow(N2,N1)|S];
-calc("ln", [N|S]) -> [math:log(N)|S];
-calc("log10", [N|S]) -> [math:log10(N)|S];
-calc("sum", S) -> [lists:sum(S)];
-calc("prod", S) -> [lists:foldl(fun erlang:'*'/2, 1, S)];
-calc("sin", [N|S]) -> [math:sin(N)|S];
-calc("cos", [N|S]) -> [math:cos(N)|S];
-calc(X, Stack) -> [read(X)|Stack].
+calc("endfun", S, ignore) -> S;
+calc(_, S, ignore) -> {ignore, S};
+calc("fun1", [X|S], T) ->
+	Fun = lists:takewhile(fun(E) -> E =/= "endfun" end, T),
+	St = replace([{"X", convert(X)}], Fun),
+	{ignore, [take_first(fold(fun calc/3, [], St))|S]};
+calc("fun2", [X,Y|S], T) ->
+	Fun = lists:takewhile(fun(E) -> E =/= "endfun" end, T),
+	St = replace([{"X", convert(X)}, {"Y", convert(Y)}], Fun),
+	{ignore, [take_first(fold(fun calc/3, [], St))|S]};
+calc("+", [N1, N2|S], _) -> [N2+N1|S];
+calc("*", [N1, N2|S], _) -> [N2*N1|S];
+calc("-", [N1, N2|S], _) -> [N2-N1|S];
+calc("/", [N1, N2|S], _) -> [N2/N1|S];
+calc("^", [N1, N2|S], _) -> [math:pow(N2,N1)|S];
+calc("ln", [N|S], _) -> [math:log(N)|S];
+calc("log10", [N|S], _) -> [math:log10(N)|S];
+calc("sum", S, _) -> [lists:sum(S)];
+calc("prod", S, _) -> [lists:foldl(fun erlang:'*'/2, 1, S)];
+calc("sin", [N|S], _) -> [math:sin(N)|S];
+calc("cos", [N|S], _) -> [math:cos(N)|S];
+calc(X, Stack, _) -> [read(X)|Stack].
 
 read(N) -> 
 	case string:to_float(N) of
 		{error, no_float} -> list_to_integer(N);
 		{F, _} -> F
 	end.
+
+convert(N) when is_float(N) ->
+	List = float_to_list(N),
+	List;
+convert(N) when is_integer(N) ->
+	List = integer_to_list(N),
+	List.
