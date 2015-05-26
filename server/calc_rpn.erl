@@ -40,14 +40,15 @@ calc(L) when is_list(L) ->
 
 calc("endfun", S, ignore) -> S;
 calc(_, S, ignore) -> {ignore, S};
-calc("fun1", [X|S], T) ->
-	Fun = lists:takewhile(fun(E) -> E =/= "endfun" end, T),
-	St = replace([{"X", convert(X)}], Fun),
-	{ignore, [take_first(fold(fun calc/3, [], St))|S]};
-calc("fun2", [X,Y|S], T) ->
-	Fun = lists:takewhile(fun(E) -> E =/= "endfun" end, T),
-	St = replace([{"X", convert(X)}, {"Y", convert(Y)}], Fun),
-	{ignore, [take_first(fold(fun calc/3, [], St))|S]};
+calc("endargs", S, _) -> S;
+calc("fun", S, T) ->
+	ArgsKey = lists:takewhile(fun(E) -> E =/= "endargs" end, T),
+	{ArgsValue, NewS} = lists:split(lists:flatlength(ArgsKey), S),
+	ArgsValueStr = lists:map(fun(E) -> convert(E) end, ArgsValue),
+	ArgsTuple = lists:zip(ArgsKey, ArgsValueStr),
+	Fun = lists:takewhile(fun(E) -> E =/= "endfun" end, lists:dropwhile(fun(E) -> E =/= "endargs" end, T)),
+	St = replace(ArgsTuple, Fun),
+	{ignore, [take_first(fold(fun calc/3, [], St))|NewS]};
 calc("+", [N1, N2|S], _) -> [N2+N1|S];
 calc("*", [N1, N2|S], _) -> [N2*N1|S];
 calc("-", [N1, N2|S], _) -> [N2-N1|S];
